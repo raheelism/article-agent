@@ -1,0 +1,12 @@
+langgraph
+langchain
+langchain-groq
+langchain-community
+pydantic
+fastapi
+uvicorn
+duckduckgo-search
+trafilatura
+pytest
+python-dotenv
+httpx
