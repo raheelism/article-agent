@@ -157,17 +157,11 @@ def create_evaluator_graph():
     workflow.add_node("critique_llama", critique_llama_node)
     workflow.add_node("optimize", optimize_node)
     
-    # Parallel critiques
-    workflow.set_entry_point("critique_qwen") # Start point needs to fan out? 
-    # Actually, to fan out, we usually have a "start" node or multiple entry points?
-    # LangGraph: entry point must be one node.
-    # To run parallel, we can have a dummy start node that edges to all three.
-    # Or set entry point to one and edge to others? No.
-    # We can use a "setup" node as entry point.
-    
+    # We use a dummy setup node to allow parallel branching from the start.
     workflow.add_node("setup", lambda x: {})
     workflow.set_entry_point("setup")
     
+    # Fan out to parallel critics
     workflow.add_edge("setup", "critique_qwen")
     workflow.add_edge("setup", "critique_kimi")
     workflow.add_edge("setup", "critique_llama")
