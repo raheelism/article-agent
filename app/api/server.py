@@ -1,11 +1,22 @@
 from fastapi import FastAPI, BackgroundTasks, HTTPException
 from pydantic import BaseModel
 import uuid
+import os
+import re
+from datetime import datetime
 from typing import Dict, Optional, Any
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from app.main_graph import create_main_graph
 import aiosqlite
 import json
+
+
+def sanitize_filename(topic: str) -> str:
+    """Convert topic to a safe filename."""
+    filename = re.sub(r'[<>:"/\\|?*]', '', topic)
+    filename = re.sub(r'\s+', '_', filename.strip())
+    filename = filename[:50]
+    return filename
 
 app = FastAPI(title="Article Agent API")
 
@@ -59,6 +70,21 @@ async def run_agent_background(job_id: str, request: JobRequest):
                 content = get_content(vfs_data["final_article.md"])
             elif "draft.md" in vfs_data:
                 content = get_content(vfs_data["draft.md"])
+            
+            # Save to Generated articles folder
+            if content:
+                output_dir = "Generated articles"
+                os.makedirs(output_dir, exist_ok=True)
+                
+                safe_name = sanitize_filename(request.topic)
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = f"{safe_name}_{timestamp}.md"
+                filepath = os.path.join(output_dir, filename)
+                
+                with open(filepath, "w", encoding="utf-8") as f:
+                    f.write(content)
+                
+                jobs[job_id]["filepath"] = filepath
                 
             jobs[job_id]["status"] = "completed"
             jobs[job_id]["result"] = content

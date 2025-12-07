@@ -59,8 +59,8 @@ The system is built on **LangGraph** with a "Supervisor" pattern orchestrating f
 │          │                                                                  │
 │          ▼                                                                  │
 │  ┌──────────────────────────────────────────────────────────────────────┐   │
-│  │                     CONDITIONAL ROUTER                                │   │
-│  │         (Routes to Researcher/Writer based on task type)              │   │
+│  │                     CONDITIONAL ROUTER                               │   │
+│  │         (Routes to Researcher/Writer based on task type)             │   │
 │  └──────────────────────────────────────────────────────────────────────┘   │
 │          │                                     │                            │
 │          ▼                                     ▼                            │
@@ -92,37 +92,37 @@ The system is built on **LangGraph** with a "Supervisor" pattern orchestrating f
 │          └──────────────┬──────────────────────┘                            │
 │                         ▼                                                   │
 │  ┌──────────────────────────────────────────────────────────────────────┐   │
-│  │                         EVALUATOR SUBGRAPH                            │   │
-│  │                    (Parallel Multi-Model Critique)                    │   │
-│  │                                                                       │   │
-│  │    ┌─────────────┐   ┌─────────────┐   ┌─────────────┐                │   │
-│  │    │    QWEN     │   │    KIMI     │   │   LLAMA 4   │                │   │
-│  │    │  (32B)      │   │(k2-instruct)│   │ (Maverick)  │                │   │
-│  │    │             │   │             │   │             │                │   │
-│  │    │ SEO &       │   │ Engagement  │   │ Logic &     │                │   │
-│  │    │ Structure   │   │ & Tone      │   │ Accuracy    │                │   │
-│  │    └──────┬──────┘   └──────┬──────┘   └──────┬──────┘                │   │
-│  │           │                 │                 │                       │   │
-│  │           └─────────────────┼─────────────────┘                       │   │
-│  │                             ▼                                         │   │
-│  │                    ┌─────────────────┐                                │   │
-│  │                    │    OPTIMIZER    │                                │   │
-│  │                    │   (GPT-120B)    │                                │   │
-│  │                    │                 │                                │   │
-│  │                    │ Synthesizes all │                                │   │
-│  │                    │ critiques and   │                                │   │
-│  │                    │ rewrites draft  │                                │   │
-│  │                    └─────────────────┘                                │   │
+│  │                         EVALUATOR SUBGRAPH                           │   │
+│  │                    (Parallel Multi-Model Critique)                   │   │
+│  │                                                                      │   │
+│  │    ┌─────────────┐   ┌─────────────┐   ┌─────────────┐               │   │
+│  │    │    QWEN     │   │    KIMI     │   │   LLAMA 4   │               │   │
+│  │    │  (32B)      │   │(k2-instruct)│   │ (Maverick)  │               │   │
+│  │    │             │   │             │   │             │               │   │
+│  │    │ SEO &       │   │ Engagement  │   │ Logic &     │               │   │
+│  │    │ Structure   │   │ & Tone      │   │ Accuracy    │               │   │
+│  │    └──────┬──────┘   └──────┬──────┘   └──────┬──────┘               │   │
+│  │           │                 │                 │                      │   │
+│  │           └─────────────────┼─────────────────┘                      │   │
+│  │                             ▼                                        │   │
+│  │                    ┌─────────────────┐                               │   │
+│  │                    │    OPTIMIZER    │                               │   │
+│  │                    │   (GPT-120B)    │                               │   │
+│  │                    │                 │                               │   │
+│  │                    │ Synthesizes all │                               │   │
+│  │                    │ critiques and   │                               │   │
+│  │                    │ rewrites draft  │                               │   │
+│  │                    └─────────────────┘                               │   │
 │  └──────────────────────────────────────────────────────────────────────┘   │
-│                         │                                                   │
-│                         ▼                                                   │
+│                                │                                            │
+│                                ▼                                            │
 │  ┌──────────────────────────────────────────────────────────────────────┐   │
-│  │                         FINALIZER                                     │   │
-│  │           (Generates SEO metadata + final formatting)                 │   │
+│  │                         FINALIZER                                    │   │
+│  │           (Generates SEO metadata + final formatting)                │   │
 │  └──────────────────────────────────────────────────────────────────────┘   │
-│                         │                                                   │
-│                         ▼                                                   │
-│                   [final_article.md]                                        │
+│                                │                                            │
+│                                ▼                                            │
+│                        [final_article.md]                                   │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -236,7 +236,9 @@ PYTHONPATH=. python scripts/run_agent.py "Benefits of Remote Work" --word-count 
 | `topic` | string | required | The article topic to write about |
 | `--word-count` | int | 1500 | Target word count for the article |
 
-**Output:** Final article saved to `final_article.md`
+**Output:** Final article saved to `Generated articles/{Topic}_{Timestamp}.md`
+
+**Example Output Path:** `Generated articles/Benefits_of_Remote_Work_20251208_143052.md`
 
 ### 2. API Mode (Production)
 
@@ -339,7 +341,8 @@ article-agent/
 │   ├── test_evaluator.py       # Evaluator tests
 │   ├── test_tools.py           # Tools tests
 │   └── test_vfs.py             # VFS tests
-├── final_article.md            # Generated article output
+├── Generated articles/         # Output folder for generated articles
+│   └── {Topic}_{Timestamp}.md  # Articles named by topic and timestamp
 ├── requirements.txt            # Python dependencies
 ├── requirements.md             # Project requirements spec
 └── README.md                   # This file
