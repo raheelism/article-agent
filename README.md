@@ -222,11 +222,8 @@ def get_writer_model():
 Run the agent directly from command line:
 
 ```bash
-# Windows (PowerShell)
-$env:PYTHONPATH="."; python scripts/run_agent.py "Benefits of Remote Work" --word-count 1000
-
-# Linux/macOS
-PYTHONPATH=. python scripts/run_agent.py "Benefits of Remote Work" --word-count 1000
+# Windows (PowerShell) or Linux/macOS
+python scripts/run_agent.py "Benefits of Remote Work" --word-count 1000
 ```
 
 **CLI Arguments:**
