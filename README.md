@@ -5,6 +5,7 @@ A "Deep Agent" system for generating high-quality, SEO-optimized articles using 
 ## Features
 
 - **Deep Research:** autonomous agent that searches the web, selects relevant sources, scrapes content, and summarizes it.
+- **Multi-Agent Evaluation:** A parallel critique system that uses specialized models to evaluate drafts on SEO, Engagement, and Logic before optimization.
 - **Virtual Filesystem (VFS):** Decouples "Working Memory" from research data, allowing for infinite research depth without blowing up context windows.
 - **Structured Planning:** A Planner agent breaks down topics into executable research and writing tasks.
 - **Persistence:** Jobs are persisted to SQLite, allowing for resume capability (architecture ready).
@@ -12,15 +13,19 @@ A "Deep Agent" system for generating high-quality, SEO-optimized articles using 
 
 ## Architecture
 
-The system is built on **LangGraph** with a "Supervisor" pattern orchestrating three subgraphs:
+The system is built on **LangGraph** with a "Supervisor" pattern orchestrating four subgraphs:
 
 1.  **Planner:** Generates the task list.
 2.  **Researcher:** `Search -> Select -> Scrape -> Summarize -> Save to VFS`.
 3.  **Writer:** `Read VFS -> Write Section -> Append to Draft`.
+4.  **Evaluator:** `Parallel Critiques (Qwen/Kimi/Llama) -> Optimizer (GPT-OSS-120B)`.
 
 Models used:
-- **Planning/Writing:** `openai/gpt-oss-120b` (via Groq)
+- **Planning/Writing/Optimization:** `openai/gpt-oss-120b` (via Groq)
 - **Research:** `openai/gpt-oss-20b` (via Groq)
+- **Critique (SEO/Structure):** `qwen/qwen3-32b`
+- **Critique (Engagement/Tone):** `moonshotai/kimi-k2-instruct`
+- **Critique (Logic/Accuracy):** `meta-llama/llama-4-maverick-17b-128e-instruct`
 
 ## Installation
 
@@ -73,7 +78,7 @@ PYTHONPATH=. pytest
 
 -   `app/agents/`: Logic for individual agents (Planner).
 -   `app/core/`: Core abstractions (VFS, State, LLM factory).
--   `app/graphs/`: Subgraph definitions (Researcher, Writer).
+-   `app/graphs/`: Subgraph definitions (Researcher, Writer, Evaluator).
 -   `app/tools/`: Tool implementations (Search, Scrape).
 -   `app/api/`: FastAPI server.
 -   `plan/`: Detailed implementation guides and architecture docs.
