@@ -6,6 +6,7 @@ from app.core.vfs import VFS
 from app.agents.planner import create_initial_plan
 from app.graphs.researcher import create_researcher_graph
 from app.graphs.writer import create_writer_graph
+from app.graphs.evaluator import create_evaluator_graph
 from app.core.llm import get_writer_model
 
 # --- SUBGRAPH WRAPPERS ---
@@ -58,6 +59,22 @@ def call_writer(state: AgentState):
         "current_task_index": state["current_task_index"] + 1
     }
 
+def call_evaluator(state: AgentState):
+    """Bridge to Evaluator Subgraph"""
+    print("--- Evaluating Article ---")
+    evaluator_input = {
+        "draft_file": "draft.md",
+        "vfs_data": state.get("vfs_data", {}),
+        "critiques": []
+    }
+    
+    evaluator_graph = create_evaluator_graph()
+    result = evaluator_graph.invoke(evaluator_input)
+    
+    return {
+        "vfs_data": result.get("vfs_data", {})
+    }
+
 def finalize_article(state: AgentState):
     """Generates SEO metadata and finalizes the article."""
     print("--- Finalizing Article ---")
@@ -106,7 +123,7 @@ def router(state: AgentState):
         return "planner"
         
     if state["current_task_index"] >= len(state["plan"]):
-        return "finalize"
+        return "evaluator"
         
     current_task = state["plan"][state["current_task_index"]]
     if current_task["type"] == "research":
@@ -114,7 +131,7 @@ def router(state: AgentState):
     elif current_task["type"] == "write":
         return "writer"
     
-    return "finalize"
+    return "evaluator"
 
 # --- MAIN GRAPH ---
 
@@ -124,6 +141,7 @@ def create_main_graph(checkpointer: Optional[BaseCheckpointSaver] = None):
     workflow.add_node("planner", planner_node)
     workflow.add_node("researcher", call_researcher)
     workflow.add_node("writer", call_writer)
+    workflow.add_node("evaluator", call_evaluator)
     workflow.add_node("finalize", finalize_article)
     
     workflow.set_entry_point("planner")
@@ -134,7 +152,7 @@ def create_main_graph(checkpointer: Optional[BaseCheckpointSaver] = None):
         {
             "researcher": "researcher",
             "writer": "writer",
-            "finalize": "finalize"
+            "evaluator": "evaluator"
         }
     )
     
@@ -144,7 +162,7 @@ def create_main_graph(checkpointer: Optional[BaseCheckpointSaver] = None):
         {
             "researcher": "researcher",
             "writer": "writer",
-            "finalize": "finalize"
+            "evaluator": "evaluator"
         }
     )
     
@@ -154,9 +172,11 @@ def create_main_graph(checkpointer: Optional[BaseCheckpointSaver] = None):
         {
             "researcher": "researcher",
             "writer": "writer",
-            "finalize": "finalize"
+            "evaluator": "evaluator"
         }
     )
+
+    workflow.add_edge("evaluator", "finalize")
     
     workflow.add_edge("finalize", END)
     

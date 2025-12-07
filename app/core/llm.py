@@ -27,3 +27,19 @@ def get_researcher_model():
 def get_writer_model():
     # Using 120B for high-quality writing
     return get_model("openai/gpt-oss-120b", temperature=0.4)
+
+def get_qwen_model():
+    # Critic 1: Structure & SEO
+    return get_model("qwen/qwen3-32b", temperature=0.1)
+
+def get_kimi_model():
+    # Critic 2: Content Quality & Engagement
+    return get_model("moonshotai/kimi-k2-instruct", temperature=0.2)
+
+def get_llama_model():
+    # Critic 3: Fact-Checking & Logic
+    return get_model("meta-llama/llama-4-maverick-17b-128e-instruct", temperature=0.1)
+
+def get_optimizer_model():
+    # Optimizer: Rewrites based on critiques
+    return get_model("openai/gpt-oss-120b", temperature=0.2)
