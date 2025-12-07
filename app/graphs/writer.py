@@ -3,14 +3,16 @@ from langgraph.graph import StateGraph, END
 from app.core.vfs import VFS
 from app.core.llm import get_writer_model
 
+# Use dict for vfs_data instead of VFS object
 class WriterState(TypedDict):
     task_description: str
-    vfs: VFS
+    vfs_data: dict
     draft_file: str # Filename of the draft
 
 def gather_context_node(state: WriterState):
     """Reads relevant files from VFS."""
-    vfs = state["vfs"]
+    vfs = VFS()
+    vfs._files = {k: v for k, v in state.get("vfs_data", {}).items()}
     files = vfs.list_files()
     
     context_text = ""
@@ -32,9 +34,12 @@ def write_node(state: WriterStateInternal):
     """Generates the text."""
     llm = get_writer_model()
     
+    vfs = VFS()
+    vfs._files = {k: v for k, v in state.get("vfs_data", {}).items()}
+    
     current_draft = ""
-    if state["vfs"].exists(state["draft_file"]):
-        current_draft = state["vfs"].read_file(state["draft_file"])
+    if vfs.exists(state["draft_file"]):
+        current_draft = vfs.read_file(state["draft_file"])
     
     draft_tail = current_draft[-2000:] if current_draft else "(Start of Article)"
     
@@ -69,11 +74,11 @@ def write_node(state: WriterStateInternal):
         
         # Append to draft
         full_content = current_draft + "\n\n" + new_content
-        state["vfs"].write_file(state["draft_file"], full_content)
+        vfs.write_file(state["draft_file"], full_content)
     except Exception as e:
         print(f"  [Writer] Failed: {e}")
     
-    return {}
+    return {"vfs_data": vfs._files}
 
 def create_writer_graph():
     workflow = StateGraph(WriterStateInternal)

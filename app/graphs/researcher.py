@@ -1,4 +1,4 @@
-from typing import TypedDict, List, Annotated
+from typing import TypedDict, List, Annotated, Any
 from langgraph.graph import StateGraph, END
 from app.core.state import AgentState
 from app.core.vfs import VFS
@@ -9,9 +9,11 @@ import json
 import re
 
 # Local state for the researcher subgraph
+# IMPORTANT: VFS object itself is not serializable by msgpack/sqlite.
+# We must pass "vfs_data" (dict) instead, or reconstruct VFS inside nodes.
 class ResearchState(TypedDict):
     query: str
-    vfs: VFS
+    vfs_data: dict 
     search_results: List[dict]
     selected_urls: List[str]
     summaries: List[str]
@@ -64,7 +66,10 @@ def scrape_and_summarize_node(state: ResearchState):
     """Scrapes and summarizes each selected URL."""
     urls = state["selected_urls"]
     llm = get_researcher_model()
-    vfs = state["vfs"]
+    
+    # Rehydrate VFS
+    vfs = VFS()
+    vfs._files = {k: v for k, v in state.get("vfs_data", {}).items()}
     
     for url in urls:
         # Determine scraper based on URL
@@ -100,8 +105,9 @@ def scrape_and_summarize_node(state: ResearchState):
             print(f"  [Researcher] Saved {filename}")
         except Exception as e:
             print(f"  [Researcher] Summarization failed: {e}")
-        
-    return {"summaries": []}
+            
+    # Return updated VFS data
+    return {"vfs_data": vfs._files}
 
 # --- GRAPH DEFINITION ---
 
