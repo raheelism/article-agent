@@ -4,6 +4,7 @@
 
 # ----- LangChain & LangGraph -----
 langgraph>=0.2.0              # State machine orchestration for agent workflows
+langgraph-checkpoint-sqlite>=2.0.0  # SQLite checkpointing for LangGraph
 langchain>=0.3.0              # LLM framework
 langchain-groq>=0.2.0         # Groq LLM provider integration
 langchain-community>=0.3.0    # Community integrations
