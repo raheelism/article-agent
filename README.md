@@ -33,10 +33,10 @@ A sophisticated "Deep Agent" system for generating high-quality, SEO-optimized a
 | 🔍 **Deep Research** | Autonomous agent that searches the web via DuckDuckGo, intelligently selects relevant sources, scrapes content using Trafilatura, and summarizes findings |
 | 🧠 **RAG-Powered Writing** | Uses SentenceTransformers + FAISS to retrieve only relevant research chunks (~600-1000 tokens) per section, avoiding rate limits and improving context quality |
 | 🎯 **Multi-Agent Evaluation** | Parallel critique system using 3 specialized AI models to evaluate drafts on SEO, Engagement, and Logic before final optimization |
-| 🤖➡️👤 **Humanization Loop** | Reflexion-based loop that detects "AI artifacts" (hedging, nominalizations, sensory vacuum) and rewrites until the text passes human-like thresholds |
+| 🤖➡️👤 **Humanization Loop** | Reflexion-based loop with example-rich prompts that detects "AI artifacts" (hedging, nominalizations, sensory vacuum) and rewrites until the text passes human-like thresholds |
 | 📁 **Virtual Filesystem (VFS)** | In-memory file system that decouples working memory from research data, enabling infinite research depth without context window overflow |
 | 📝 **Structured Planning** | AI Planner agent that breaks down topics into executable research and writing tasks with logical flow |
-| ✍️ **Anti-AI Writing Constraints** | Writer enforces "Absolute Mode" - bans robotic words (delve, tapestry, foster) and enforces sentence burstiness from the start |
+| ✍️ **Anti-AI Writing Constraints** | Writer uses detailed before/after examples to enforce human voice - bans 20+ robotic words and enforces sentence burstiness |
 | 💾 **Persistence** | Jobs persisted to SQLite with async checkpointing, enabling resume capability for long-running tasks |
 | 🌐 **Service Layer** | Production-ready FastAPI backend for managing content generation jobs via REST API |
 | 🔄 **Conditional Routing** | LangGraph-powered state machine with intelligent task routing between research, writing, evaluation, and humanization phases |
@@ -414,18 +414,27 @@ The Optimizer (GPT-120B):
 
 ### 6. Humanization Phase (Reflexion Loop)
 Up to 3 iterations of:
-1. **Humanization Critic** - Analyzes for AI artifacts:
-   - Hedging ("potentially", "arguably")
-   - Connector overuse ("Moreover", "Furthermore")
+1. **Humanization Critic** - Analyzes for AI artifacts with detailed pattern matching:
+   - Hedging ("It is important to note that..." → direct statements)
+   - Connector overuse ("Moreover, Furthermore, Additionally" → natural flow)
    - Nominalization ("made a decision" → "decided")
-   - Sensory vacuum (abstract sections lacking physical details)
+   - Sensory vacuum (abstract → physical details)
+   - AI vocabulary detection (delve, tapestry, leverage, robust, etc.)
    - Burstiness score (sentence length variety)
-2. **Refiner Agent** - Rewrites using:
-   - Chain of Density (CoD)
-   - Sensory injection
-   - Hedge elimination
-   - Connector pruning
+2. **Refiner Agent** - Rewrites using example-driven transformations:
+   - Before/after patterns for hedge elimination
+   - Sensory injection templates
+   - Connector pruning with rhythm patterns
+   - AI vocabulary replacement guide (20+ words)
 3. **Loop Check** - If AI Artifact Score > 3, repeat; otherwise exit
+
+**Banned Words List:**
+```
+delve, tapestry, landscape, unleash, foster, paramount, underscores,
+game-changer, multifaceted, holistic, leverage, synergy, robust,
+streamline, cutting-edge, revolutionary, transformative, comprehensive,
+facilitate, utilize
+```
 
 ### 7. Finalization
 - Generates SEO metadata (title tag, meta description)
@@ -485,17 +494,15 @@ files = vfs.list_files()  # ["research/topic1.md", "draft.md"]
 Run the test suite:
 
 ```bash
-# Windows (PowerShell)
-$env:PYTHONPATH="."; pytest
-
-# Linux/macOS
-PYTHONPATH=. pytest
+# Windows (PowerShell) or Linux/macOS
+pytest
 
 # With verbose output
-PYTHONPATH=. pytest -v
+pytest -v
 
 # Run specific test file
-PYTHONPATH=. pytest tests/test_vfs.py
+pytest tests/test_vfs.py
+pytest tests/test_humanizer.py
 ```
 
 ---
@@ -509,6 +516,7 @@ The project follows a phased development approach:
 | **Phase 1** | Foundation (Core infrastructure, VFS, LLM) | ✅ Complete |
 | **Phase 2** | Agent Graph (Subgraphs, routing, orchestration) | ✅ Complete |
 | **Phase 3** | Service & Quality (API, persistence, evaluation) | ✅ Complete |
+| **Phase 4** | Humanization (RAG writing, reflexion loop, anti-AI prompts) | ✅ Complete |
 
 See [`plan/`](plan/) directory for detailed implementation guides.
 
