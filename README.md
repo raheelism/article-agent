@@ -263,11 +263,8 @@ python scripts/run_agent.py "Benefits of Remote Work" --word-count 1000
 Start the FastAPI server:
 
 ```bash
-# Windows (PowerShell)
-$env:PYTHONPATH="."; uvicorn app.api.server:app --host 0.0.0.0 --port 8000
-
-# Linux/macOS
-PYTHONPATH=. uvicorn app.api.server:app --host 0.0.0.0 --port 8000
+# Windows (PowerShell) or Linux/macOS
+uvicorn app.api.server:app --host 0.0.0.0 --port 8000
 ```
 
 The API will be available at `http://localhost:8000`
