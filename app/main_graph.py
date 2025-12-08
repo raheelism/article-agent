@@ -7,6 +7,7 @@ from app.agents.planner import create_initial_plan
 from app.graphs.researcher import create_researcher_graph
 from app.graphs.writer import create_writer_graph
 from app.graphs.evaluator import create_evaluator_graph
+from app.graphs.humanizer import create_humanizer_graph
 from app.core.llm import get_writer_model
 
 # --- SUBGRAPH WRAPPERS ---
@@ -70,6 +71,23 @@ def call_evaluator(state: AgentState):
     
     evaluator_graph = create_evaluator_graph()
     result = evaluator_graph.invoke(evaluator_input)
+    
+    return {
+        "vfs_data": result.get("vfs_data", {})
+    }
+
+def call_humanizer(state: AgentState):
+    """Bridge to Humanizer Subgraph"""
+    print("--- Humanizing Article ---")
+    humanizer_input = {
+        "draft_file": "draft.md",
+        "vfs_data": state.get("vfs_data", {}),
+        "last_critique": None,
+        "iteration_count": 0
+    }
+    
+    humanizer_graph = create_humanizer_graph()
+    result = humanizer_graph.invoke(humanizer_input)
     
     return {
         "vfs_data": result.get("vfs_data", {})
@@ -142,6 +160,7 @@ def create_main_graph(checkpointer: Optional[BaseCheckpointSaver] = None):
     workflow.add_node("researcher", call_researcher)
     workflow.add_node("writer", call_writer)
     workflow.add_node("evaluator", call_evaluator)
+    workflow.add_node("humanizer", call_humanizer)
     workflow.add_node("finalize", finalize_article)
     
     workflow.set_entry_point("planner")
@@ -176,7 +195,8 @@ def create_main_graph(checkpointer: Optional[BaseCheckpointSaver] = None):
         }
     )
 
-    workflow.add_edge("evaluator", "finalize")
+    workflow.add_edge("evaluator", "humanizer")
+    workflow.add_edge("humanizer", "finalize")
     
     workflow.add_edge("finalize", END)
     

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Optional
 from pydantic import BaseModel
-from duckduckgo_search import DDGS
+from ddgs import DDGS
 import time
 
 class SearchResult(BaseModel):

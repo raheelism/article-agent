@@ -31,18 +31,21 @@ A sophisticated "Deep Agent" system for generating high-quality, SEO-optimized a
 | Feature | Description |
 |---------|-------------|
 | 🔍 **Deep Research** | Autonomous agent that searches the web via DuckDuckGo, intelligently selects relevant sources, scrapes content using Trafilatura, and summarizes findings |
+| 🧠 **RAG-Powered Writing** | Uses SentenceTransformers + FAISS to retrieve only relevant research chunks (~600-1000 tokens) per section, avoiding rate limits and improving context quality |
 | 🎯 **Multi-Agent Evaluation** | Parallel critique system using 3 specialized AI models to evaluate drafts on SEO, Engagement, and Logic before final optimization |
+| 🤖➡️👤 **Humanization Loop** | Reflexion-based loop that detects "AI artifacts" (hedging, nominalizations, sensory vacuum) and rewrites until the text passes human-like thresholds |
 | 📁 **Virtual Filesystem (VFS)** | In-memory file system that decouples working memory from research data, enabling infinite research depth without context window overflow |
 | 📝 **Structured Planning** | AI Planner agent that breaks down topics into executable research and writing tasks with logical flow |
+| ✍️ **Anti-AI Writing Constraints** | Writer enforces "Absolute Mode" - bans robotic words (delve, tapestry, foster) and enforces sentence burstiness from the start |
 | 💾 **Persistence** | Jobs persisted to SQLite with async checkpointing, enabling resume capability for long-running tasks |
 | 🌐 **Service Layer** | Production-ready FastAPI backend for managing content generation jobs via REST API |
-| 🔄 **Conditional Routing** | LangGraph-powered state machine with intelligent task routing between research, writing, and evaluation phases |
+| 🔄 **Conditional Routing** | LangGraph-powered state machine with intelligent task routing between research, writing, evaluation, and humanization phases |
 
 ---
 
 ## 🏗 Architecture
 
-The system is built on **LangGraph** with a "Supervisor" pattern orchestrating four subgraphs:
+The system is built on **LangGraph** with a "Supervisor" pattern orchestrating five subgraphs:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -117,6 +120,23 @@ The system is built on **LangGraph** with a "Supervisor" pattern orchestrating f
 │                                │                                            │
 │                                ▼                                            │
 │  ┌──────────────────────────────────────────────────────────────────────┐   │
+│  │                      HUMANIZER SUBGRAPH                              │   │
+│  │                  (Reflexion Loop - up to 3 iterations)               │   │
+│  │                                                                      │   │
+│  │    ┌─────────────────┐         ┌─────────────────┐                   │   │
+│  │    │  HUMANIZATION   │ ──────► │    REFINER      │                   │   │
+│  │    │     CRITIC      │         │                 │                   │   │
+│  │    │                 │         │ Chain of Density│                   │   │
+│  │    │ Detects:        │         │ Sensory Inject  │                   │   │
+│  │    │ - Hedging       │ ◄────── │ Kill Hedges     │                   │   │
+│  │    │ - Connectors    │  Loop   │ Prune Connectors│                   │   │
+│  │    │ - Nominalization│  if     │                 │                   │   │
+│  │    │ - Sensory Vacuum│ score>3 │                 │                   │   │
+│  │    └─────────────────┘         └─────────────────┘                   │   │
+│  └──────────────────────────────────────────────────────────────────────┘   │
+│                                │                                            │
+│                                ▼                                            │
+│  ┌──────────────────────────────────────────────────────────────────────┐   │
 │  │                         FINALIZER                                    │   │
 │  │           (Generates SEO metadata + final formatting)                │   │
 │  └──────────────────────────────────────────────────────────────────────┘   │
@@ -146,8 +166,9 @@ The system is built on **LangGraph** with a "Supervisor" pattern orchestrating f
 |----------|--------------|
 | **Framework** | LangGraph (State Machine Orchestration) |
 | **LLM Provider** | Groq (Fast Inference) |
+| **RAG / Embeddings** | SentenceTransformers + FAISS |
 | **API** | FastAPI + Uvicorn |
-| **Web Search** | DuckDuckGo Search |
+| **Web Search** | DDGS (DuckDuckGo Search) |
 | **Web Scraping** | Trafilatura |
 | **Persistence** | SQLite (Async) |
 | **Validation** | Pydantic |
@@ -320,11 +341,12 @@ article-agent/
 │   │   └── vfs.py              # Virtual File System implementation
 │   ├── graphs/
 │   │   ├── evaluator.py        # Evaluator subgraph (parallel critiques)
+│   │   ├── humanizer.py        # Humanizer subgraph (reflexion loop)
 │   │   ├── researcher.py       # Researcher subgraph (search/scrape/summarize)
-│   │   └── writer.py           # Writer subgraph (draft generation)
+│   │   └── writer.py           # Writer subgraph (RAG + draft generation)
 │   ├── tools/
 │   │   ├── scraper.py          # Web scraping with Trafilatura
-│   │   └── search.py           # DuckDuckGo search provider
+│   │   └── search.py           # DDGS search provider
 │   └── main_graph.py           # Main orchestration graph
 ├── plan/
 │   ├── phase_1_foundation/     # Phase 1 implementation docs
@@ -336,6 +358,7 @@ article-agent/
 │   └── run_agent.py            # CLI entry point
 ├── tests/
 │   ├── test_evaluator.py       # Evaluator tests
+│   ├── test_humanizer.py       # Humanizer tests
 │   ├── test_tools.py           # Tools tests
 │   └── test_vfs.py             # VFS tests
 ├── Generated articles/         # Output folder for generated articles
@@ -369,11 +392,13 @@ For each `research` task:
 3. **Scrape** - Extract content using Trafilatura
 4. **Summarize** - LLM extracts key facts and saves to VFS
 
-### 3. Writing Phase
+### 3. Writing Phase (RAG-Powered)
 For each `write` task:
-1. **Gather Context** - Read research summaries from VFS
-2. **Generate Content** - LLM writes section based on research
-3. **Append** - Add new content to `draft.md` in VFS
+1. **Chunk Research** - Split research summaries into paragraphs
+2. **Embed & Index** - Use SentenceTransformers to embed chunks, build FAISS index
+3. **Retrieve Context** - Find top 4 most relevant chunks (~600-1000 tokens) for the current section
+4. **Generate Content** - LLM writes section with "Absolute Mode" constraints (no robotic words, enforced burstiness)
+5. **Append** - Add new content to `draft.md` in VFS
 
 ### 4. Evaluation Phase
 Three parallel critics analyze the draft:
@@ -390,7 +415,22 @@ The Optimizer (GPT-120B):
 - Rewrites the article addressing all issues
 - Maintains Markdown formatting
 
-### 6. Finalization
+### 6. Humanization Phase (Reflexion Loop)
+Up to 3 iterations of:
+1. **Humanization Critic** - Analyzes for AI artifacts:
+   - Hedging ("potentially", "arguably")
+   - Connector overuse ("Moreover", "Furthermore")
+   - Nominalization ("made a decision" → "decided")
+   - Sensory vacuum (abstract sections lacking physical details)
+   - Burstiness score (sentence length variety)
+2. **Refiner Agent** - Rewrites using:
+   - Chain of Density (CoD)
+   - Sensory injection
+   - Hedge elimination
+   - Connector pruning
+3. **Loop Check** - If AI Artifact Score > 3, repeat; otherwise exit
+
+### 7. Finalization
 - Generates SEO metadata (title tag, meta description)
 - Saves final article to `final_article.md`
 
