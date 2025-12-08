@@ -30,28 +30,56 @@ def humanization_critic_node(state: HumanizerState):
     llm = get_optimizer_model()
     
     prompt = f"""
-    Analyze the input draft solely for 'AI Artifacts'. Do not check for factual accuracy.
+    You are a Linguistic Forensics Expert. Analyze the draft for 'AI Artifacts' - patterns that reveal machine authorship.
     
     Draft:
     {draft[:10000]}... (truncated)
     
-    Output a structured JSON critique identifying:
-    1. Hedging: usage of 'potential,' 'arguably,' 'it is important to note'.
-    2. Connective Tissue Syndrome: Overuse of 'Moreover,' 'Furthermore,' 'In conclusion'.
-    3. Nominalization: Instances where actions are turned into nouns (e.g., 'made a decision' instead of 'decided').
-    4. Sensory Vacuum: Sections that are purely abstract and lack physical/sensory descriptions.
-    5. Burstiness Score: A qualitative assessment of sentence length variety (1-10, where 1 is robotic/uniform and 10 is jagged/human).
-    6. AI Artifact Score: An overall score from 1-10 indicating how "AI-like" the text is (10 = very robotic, 1 = very human).
+    DETECTION CATEGORIES:
     
-    Return ONLY valid JSON in the following format:
+    1. HEDGING LANGUAGE (Weak, non-committal phrasing)
+       BAD: "It is important to note that exercise could potentially help with..."
+       BAD: "This arguably suggests that there may be benefits..."
+       BAD: "One might consider the possibility that..."
+       GOOD: "Exercise helps." "This suggests benefits." "Consider this:"
+    
+    2. CONNECTOR OVERLOAD (Robotic transition words)
+       BAD: "Moreover, the study shows... Furthermore, experts believe... Additionally, research indicates... In conclusion..."
+       GOOD: Let ideas flow naturally. Use whitespace. Start sentences with subjects, not connectors.
+    
+    3. NOMINALIZATION (Verbs turned into clunky nouns)
+       BAD: "The implementation of the system" → GOOD: "We implemented the system"
+       BAD: "The utilization of resources" → GOOD: "We used resources"
+       BAD: "Made a decision" → GOOD: "Decided"
+       BAD: "Conducted an investigation" → GOOD: "Investigated"
+       BAD: "Achieved optimization" → GOOD: "Optimized"
+    
+    4. SENSORY VACUUM (Abstract without physical grounding)
+       BAD: "Productivity increases when employees feel valued."
+       GOOD: "The office hums with keyboard clicks. Coffee cups empty faster. Deadlines whoosh past."
+       BAD: "Stress affects mental health negatively."
+       GOOD: "Your shoulders clench. The jaw tightens. Sleep fragments into 3 AM ceiling-staring."
+    
+    5. UNIFORM SENTENCE LENGTH (Robotic rhythm)
+       BAD: "The study shows results. The results are positive. The positive results matter. This matters greatly."
+       GOOD: "Results landed. Positive ones. The kind that make researchers high-five in sterile labs and email colleagues at midnight with all-caps subject lines."
+    
+    6. AI VOCABULARY (Overused LLM words)
+       FLAGGED WORDS: "delve", "tapestry", "landscape", "unleash", "foster", "paramount", 
+       "underscores", "game-changer", "multifaceted", "holistic", "leverage", "synergy",
+       "robust", "streamline", "cutting-edge", "revolutionary", "transformative"
+    
+    Return ONLY valid JSON:
     {{
-        "hedging_issues": ["example1", ...],
-        "connector_issues": ["example1", ...],
-        "nominalization_issues": ["example1", ...],
-        "sensory_vacuum_issues": ["section description", ...],
+        "hedging_issues": ["exact quote from text", ...],
+        "connector_issues": ["exact quote from text", ...],
+        "nominalization_issues": ["exact quote from text", ...],
+        "sensory_vacuum_issues": ["description of abstract section needing sensory detail", ...],
+        "ai_vocabulary_found": ["flagged words found", ...],
         "burstiness_score": 5,
         "ai_artifact_score": 8,
-        "general_feedback": "..."
+        "worst_paragraph": "paste the most robotic paragraph here",
+        "general_feedback": "specific actionable feedback"
     }}
     """
     
@@ -93,24 +121,80 @@ def refiner_node(state: HumanizerState):
     llm = get_optimizer_model() # Using high quality model for rewriting
     
     prompt = f"""
-    Role: You are a Refiner Agent. Your goal is NOT to be polite or helpful. Your goal is to obliterate the "Machine Voice."
+    You are a Ruthless Human Voice Editor. Your ONLY job: make this text sound like a skilled human wrote it, not a machine.
     
     Input Draft:
     {draft}
     
-    Critique of AI Artifacts:
+    Detected AI Artifacts:
     {json.dumps(critique, indent=2)}
     
-    Directives:
-    1. Kill the Hedges: Change "This could potentially suggest..." to "This suggests..." Eliminate "It appears that." Be authoritative.
-    2. Prune Connectors: Remove at least 80% of transition words like "Moreover," "Additionally," and "However." Rely on the semantic flow of ideas instead.
-    3. Lexical Purge: If the draft contains "delve," "tapestry," or "game-changer," replace them with specific, low-frequency vocabulary.
-    4. Inject Sensory Detail: The current text is abstract. Add specific visual or tactile details to the examples. Show, don't just tell.
-    5. Variable Sentence Structure: Ensure the output has high "burstiness." Mix fragments with long compound sentences.
-    6. Denominalization: Convert nominalizations (words ending in -tion, -ment) back into active verbs.
+    TRANSFORMATION RULES WITH EXAMPLES:
     
-    Output:
-    The completely rewritten article. Do not output anything else. Maintain Markdown formatting.
+    ═══════════════════════════════════════════════════════════════
+    RULE 1: KILL HEDGING - Be direct and authoritative
+    ═══════════════════════════════════════════════════════════════
+    BEFORE: "It is important to note that meditation could potentially help reduce stress levels."
+    AFTER:  "Meditation cuts stress. Studies confirm it."
+    
+    BEFORE: "One might argue that sleep plays a crucial role in cognitive function."
+    AFTER:  "Sleep fuels the brain. Skip it, and your thinking turns to sludge."
+    
+    BEFORE: "This arguably demonstrates the significance of proper nutrition."
+    AFTER:  "Eat garbage, feel like garbage. Simple math."
+    
+    ═══════════════════════════════════════════════════════════════
+    RULE 2: MURDER CONNECTORS - Let ideas breathe
+    ═══════════════════════════════════════════════════════════════
+    BEFORE: "Moreover, research indicates that exercise improves mood. Furthermore, it enhances cognitive function. Additionally, it promotes better sleep. In conclusion, exercise is beneficial."
+    AFTER:  "Exercise lifts mood. Sharpens thinking. Deepens sleep. Three wins from one habit."
+    
+    DELETE: Moreover, Furthermore, Additionally, However, Nevertheless, In conclusion, It is worth noting, Consequently
+    
+    ═══════════════════════════════════════════════════════════════
+    RULE 3: INJECT SENSORY DETAILS - Make readers feel it
+    ═══════════════════════════════════════════════════════════════
+    BEFORE: "Stress negatively impacts productivity and well-being."
+    AFTER:  "Stress tightens your shoulders into rocks. Your inbox blurs. Coffee tastes like battery acid. Deadlines pile up like unpaid bills."
+    
+    BEFORE: "Morning routines improve daily performance."
+    AFTER:  "The alarm screams at 6 AM. Cold water hits your face. The coffee machine gurgles. By 7, you're two emails ahead of yesterday's you."
+    
+    ═══════════════════════════════════════════════════════════════
+    RULE 4: VARY SENTENCE LENGTH - Create rhythm
+    ═══════════════════════════════════════════════════════════════
+    BEFORE: "The brain requires adequate rest. Sleep deprivation causes cognitive decline. Memory consolidation happens during sleep. Therefore sleep is essential."
+    AFTER:  "Your brain needs rest. Not optional. During sleep, memories cement themselves into neural pathways—the day's chaos finally making sense. Skip this, and yesterday's lessons evaporate like morning fog."
+    
+    Pattern: Short. Short. Long with texture. Medium with punch.
+    
+    ═══════════════════════════════════════════════════════════════
+    RULE 5: DENOMINALIZE - Verbs beat nouns
+    ═══════════════════════════════════════════════════════════════
+    BEFORE: "The implementation of the new system resulted in optimization of workflow."
+    AFTER:  "We implemented the new system. Workflow sped up."
+    
+    BEFORE: "The utilization of meditation techniques leads to the reduction of anxiety."
+    AFTER:  "Meditate. Anxiety drops."
+    
+    ═══════════════════════════════════════════════════════════════
+    RULE 6: PURGE AI VOCABULARY - Replace with specific words
+    ═══════════════════════════════════════════════════════════════
+    "delve into" → "dig into" / "explore" / "examine"
+    "tapestry" → (just remove it, use specific imagery instead)
+    "landscape" → "field" / "space" / "world" / (be specific: "the startup scene")
+    "unleash" → "release" / "trigger" / "spark"
+    "foster" → "build" / "grow" / "encourage"
+    "paramount" → "critical" / "essential" / "the priority"
+    "game-changer" → (describe what actually changed)
+    "leverage" → "use" / "apply"
+    "robust" → "strong" / "solid" / "reliable"
+    "holistic" → "complete" / "full" / "whole"
+    
+    ═══════════════════════════════════════════════════════════════
+    
+    OUTPUT: The completely rewritten article. No preamble. No "Here is the revised..."
+    Just the article in Markdown format.
     """
     
     try:

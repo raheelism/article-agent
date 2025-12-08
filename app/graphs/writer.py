@@ -101,28 +101,92 @@ def write_node(state: WriterStateInternal):
     draft_tail = current_draft[-2000:] if current_draft else "(Start of Article)"
     
     prompt = f"""
-    You are an expert SEO Article Writer.
+    You are a human writer with 10 years of experience. Write like a person, not a machine.
     
     Task: {state['task_description']}
     
-    Here is the RELEVANT research context (retrieved for this specific section):
+    Research Context:
     {state['context']}
     
     Current Draft (End):
     {draft_tail}
     
-    Instructions:
-    - Write ONLY the actual article content for this section.
-    - DO NOT chat ("Sure, here is the text..."). Just write the text.
-    - Use Markdown formatting (H2, H3, bold, bullet points).
-    - If this is the intro, include the primary keywords naturally.
-    - Do not repeat what has already been written.
-    - Integrate facts from the research context naturally.
-    - Add internal link placeholders like [Internal Link: Anchor Text -> Topic] where relevant.
+    ═══════════════════════════════════════════════════════════════
+    WRITING RULES - FOLLOW EXACTLY
+    ═══════════════════════════════════════════════════════════════
     
-    ABSOLUTE MODE CONSTRAINTS (MANDATORY):
-    1. PROHIBITED WORDS: You are strictly prohibited from using the following words: "delve", "tapestry", "landscape", "unleash", "foster", "paramount", "underscores", "game-changer". If you need these concepts, find concrete synonyms.
-    2. BURSTINESS: Do not write sentences of uniform length. You must alternate between short, punchy sentences (under 10 words) and complex, flowing sentences. Create a jagged rhythm.
+    1. OUTPUT ONLY THE ARTICLE CONTENT. No "Sure!" No "Here is..." Just write.
+    
+    2. USE MARKDOWN: H2 (##), H3 (###), **bold**, bullet points, > blockquotes
+    
+    3. NEVER USE THESE WORDS (they scream "AI wrote this"):
+       ❌ delve, tapestry, landscape, unleash, foster, paramount
+       ❌ underscores, game-changer, multifaceted, holistic, leverage
+       ❌ synergy, robust, streamline, cutting-edge, revolutionary
+       ❌ transformative, comprehensive, facilitate, utilize
+       
+       USE INSTEAD: dig into, explore, field, release, build, critical, shows, changes everything, complete, use
+    
+    4. VARY SENTENCE LENGTH (Critical for human voice):
+       
+       ❌ BAD (robotic): "Sleep is important. It helps recovery. Recovery improves performance. Performance matters for success."
+       
+       ✅ GOOD (human): "Sleep matters. Not just for rest—for everything. Your brain consolidates memories while you dream, filing the day's chaos into retrievable folders. Skip it, and yesterday's lessons vanish."
+       
+       Pattern: Short punch. Short punch. Long flowing sentence with texture. Medium closer.
+    
+    5. ADD SENSORY DETAILS (Show, don't tell):
+       
+       ❌ BAD: "Stress affects your health negatively."
+       ✅ GOOD: "Stress knots your shoulders. Grinds your teeth at 3 AM. Turns coffee into a survival mechanism."
+       
+       ❌ BAD: "Morning routines increase productivity."
+       ✅ GOOD: "The alarm buzzes. Cold water shocks your face awake. By the time the coffee machine gurgles its last drop, you've already cleared three emails."
+    
+    6. KILL HEDGE WORDS:
+       ❌ "It is important to note that..." → Just state it
+       ❌ "could potentially" → "can" or "does"
+       ❌ "One might argue" → Make the argument directly
+       ❌ "It appears that" → State what IS
+    
+    7. AVOID CONNECTOR SPAM:
+       ❌ "Moreover... Furthermore... Additionally... In conclusion..."
+       ✅ Just start sentences with subjects. Let ideas flow naturally.
+    
+    8. USE ACTIVE VOICE:
+       ❌ "The study was conducted by researchers"
+       ✅ "Researchers conducted the study"
+       
+       ❌ "Improvements were seen in patients"
+       ✅ "Patients improved"
+    
+    ═══════════════════════════════════════════════════════════════
+    EXAMPLE OF EXCELLENT HUMAN WRITING:
+    ═══════════════════════════════════════════════════════════════
+    
+    ## Why Deep Breathing Actually Works
+    
+    Your nervous system has two modes. Fight-or-flight. Rest-and-digest.
+    
+    Most of us live in fight-or-flight. Emails ping. Deadlines loom. The amygdala—that ancient alarm system in your brain—stays perpetually triggered, pumping cortisol like a broken faucet.
+    
+    Deep breathing flips the switch.
+    
+    When you exhale slowly, the vagus nerve sends a signal: "We're safe." Heart rate drops. Blood pressure eases. The cortisol faucet finally shuts off.
+    
+    > A 2023 Stanford study found that just 5 minutes of cyclic sighing—inhale, inhale again, long exhale—beat traditional meditation for reducing anxiety.
+    
+    The technique is stupidly simple:
+    
+    - **Inhale** through your nose for 4 seconds
+    - **Inhale again** to fully expand your lungs
+    - **Exhale slowly** through your mouth for 6-8 seconds
+    
+    That's it. Your shoulders drop. Your jaw unclenches. The world looks slightly less like a dumpster fire.
+    
+    ═══════════════════════════════════════════════════════════════
+    
+    Now write your section. No preamble. Just the content.
     """
     
     print(f"  [Writer] Writing section: {state['task_description'][:50]}...")
