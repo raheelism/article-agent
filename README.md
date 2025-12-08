@@ -41,6 +41,9 @@ A sophisticated "Deep Agent" system for generating high-quality, SEO-optimized a
 | 🧠 **RAG-Powered Writing** | Uses SentenceTransformers + FAISS to retrieve only relevant research chunks (~600-1000 tokens) per section, avoiding rate limits and improving context quality |
 | 🎯 **Multi-Agent Evaluation** | Parallel critique system using 3 specialized AI models to evaluate drafts on SEO, Engagement, and Logic before final optimization |
 | 🤖➡️👤 **Humanization Loop** | Reflexion-based loop achieving **0% AI detection** - detects "AI artifacts" (hedging, nominalizations, sensory vacuum) and rewrites until text is indistinguishable from human writing |
+| ❓ **FAQ Generation** | Automatically generates 5-7 FAQ items from research data and article content, formatted for rich snippets |
+| 📊 **Keyword Analysis** | Extracts primary, secondary, and LSI keywords with density analysis and SEO recommendations |
+| 🔗 **Structured Linking** | Generates 3-5 internal link suggestions and 2-4 authoritative external source citations with placement context |
 | 📁 **Virtual Filesystem (VFS)** | In-memory file system that decouples working memory from research data, enabling infinite research depth without context window overflow |
 | 📝 **Structured Planning** | AI Planner agent that breaks down topics into executable research and writing tasks with logical flow |
 | ✍️ **Anti-AI Writing Constraints** | Writer uses detailed before/after examples to enforce human voice - bans 20+ robotic words and enforces sentence burstiness |
@@ -144,8 +147,22 @@ The system is built on **LangGraph** with a "Supervisor" pattern orchestrating f
 │                                │                                            │
 │                                ▼                                            │
 │  ┌──────────────────────────────────────────────────────────────────────┐   │
+│  │                    SEO ANALYSIS (PARALLEL)                           │   │
+│  │                                                                      │   │
+│  │    ┌─────────────┐   ┌─────────────┐   ┌─────────────┐               │   │
+│  │    │     FAQ     │   │  KEYWORDS   │   │   LINKING   │               │   │
+│  │    │  GENERATOR  │   │  ANALYZER   │   │  SUGGESTER  │               │   │
+│  │    │             │   │             │   │             │               │   │
+│  │    │ 5-7 Q&A     │   │ Primary +   │   │ 3-5 Internal│               │   │
+│  │    │ from        │   │ Secondary + │   │ 2-4 External│               │   │
+│  │    │ research    │   │ LSI + Density│  │ with context│               │   │
+│  │    └─────────────┘   └─────────────┘   └─────────────┘               │   │
+│  └──────────────────────────────────────────────────────────────────────┘   │
+│                                │                                            │
+│                                ▼                                            │
+│  ┌──────────────────────────────────────────────────────────────────────┐   │
 │  │                         FINALIZER                                    │   │
-│  │           (Generates SEO metadata + final formatting)                │   │
+│  │     (SEO metadata + FAQ section + Keyword Report + Link Strategy)    │   │
 │  └──────────────────────────────────────────────────────────────────────┘   │
 │                                │                                            │
 │                                ▼                                            │
@@ -265,6 +282,71 @@ python scripts/run_agent.py "Benefits of Remote Work" --word-count 1000
 
 **Example Output Path:** `Generated articles/Benefits_of_Remote_Work_20251208_143052.md`
 
+### Output Structure
+
+The generated article includes:
+
+```markdown
+---
+title: "SEO-Optimized Title (max 60 chars)"
+meta_description: "Compelling description (max 160 chars)"
+primary_keyword: "main keyword"
+---
+
+# Article Title
+
+[Article content with proper H1/H2/H3 hierarchy...]
+
+---
+
+## ❓ Frequently Asked Questions
+
+### What is [topic]?
+[Answer based on research...]
+
+### How do I [action]?
+[Practical answer...]
+
+[5-7 FAQ items total]
+
+---
+
+## 📊 SEO Analysis Report
+
+### Keywords
+
+**Primary Keyword:** `main keyword phrase`
+
+**Secondary Keywords:**
+- keyword 1
+- keyword 2
+
+**LSI Keywords:**
+- related term 1
+- related term 2
+
+**Keyword Density:**
+| Keyword | Density |
+|---------|---------|
+| main keyword | 1.5% |
+
+**SEO Recommendations:**
+- ✅ Primary keyword density is optimal (1.5%)
+- 💡 Consider adding primary keyword to H2 headings
+
+### 🔗 Linking Strategy
+
+**Internal Links (3-5):**
+| Anchor Text | Target Page | Context |
+|-------------|-------------|---------|
+| productivity tools | Best Tools Guide | In tools section |
+
+**External Links (Authoritative Sources):**
+| Source | Anchor Text | Placement |
+|--------|-------------|-----------|
+| Harvard Business Review | according to HBR | Support statistics |
+```
+
 ### 2. API Mode (Production)
 
 Start the FastAPI server:
@@ -345,7 +427,10 @@ article-agent/
 │   │   └── vfs.py              # Virtual File System implementation
 │   ├── graphs/
 │   │   ├── evaluator.py        # Evaluator subgraph (parallel critiques)
+│   │   ├── faq.py              # FAQ generator (from research data)
 │   │   ├── humanizer.py        # Humanizer subgraph (reflexion loop)
+│   │   ├── keyword_analyzer.py # Keyword extraction and density analysis
+│   │   ├── linking.py          # Internal/external link suggestions
 │   │   ├── researcher.py       # Researcher subgraph (search/scrape/summarize)
 │   │   └── writer.py           # Writer subgraph (RAG + draft generation)
 │   ├── tools/
@@ -356,6 +441,7 @@ article-agent/
 │   ├── phase_1_foundation/     # Phase 1 implementation docs
 │   ├── phase_2_agent_graph/    # Phase 2 implementation docs
 │   ├── phase_3_service_quality/# Phase 3 implementation docs
+│   ├── phase_4_humanization/   # Phase 4 implementation docs
 │   ├── system_architecture/    # System architecture docs
 │   └── README.md               # Development plan overview
 ├── scripts/
@@ -443,9 +529,19 @@ streamline, cutting-edge, revolutionary, transformative, comprehensive,
 facilitate, utilize
 ```
 
-### 7. Finalization
+### 7. SEO Analysis (Parallel)
+After humanization, three agents run in parallel:
+
+1. **FAQ Generator** - Creates 5-7 Q&A pairs from research data
+2. **Keyword Analyzer** - Extracts primary/secondary/LSI keywords with density analysis
+3. **Linking Suggester** - Generates 3-5 internal + 2-4 external link suggestions
+
+### 8. Finalization
 - Generates SEO metadata (title tag, meta description)
-- Saves final article to `final_article.md`
+- Appends FAQ section to article
+- Appends keyword analysis report
+- Appends linking strategy tables
+- Saves final article to `Generated articles/{Topic}_{Timestamp}.md`
 
 ---
 
@@ -467,8 +563,33 @@ class AgentState(TypedDict):
     # Virtual File System (serializable)
     vfs_data: Dict[str, Dict]  # Filename -> File content/metadata
     
+    # SEO Analysis Results
+    faqs: List[FAQItem]           # Generated FAQ section
+    keyword_report: KeywordReport # Keyword analysis
+    linking_report: LinkingReport # Link suggestions
+    
     # Logging
     logs: List[str]         # Execution logs (append-only)
+```
+
+### SEO Report Schemas
+
+```python
+class FAQItem(TypedDict):
+    question: str
+    answer: str
+
+class KeywordReport(TypedDict):
+    primary_keyword: str
+    secondary_keywords: List[str]
+    lsi_keywords: List[str]
+    keyword_density: Dict[str, float]
+    recommendations: List[str]
+    total_words: int
+
+class LinkingReport(TypedDict):
+    internal_links: List[InternalLink]  # anchor, target, context
+    external_links: List[ExternalLink]  # source, url, anchor, placement
 ```
 
 ### Task Schema
@@ -524,6 +645,7 @@ The project follows a phased development approach:
 | **Phase 2** | Agent Graph (Subgraphs, routing, orchestration) | ✅ Complete |
 | **Phase 3** | Service & Quality (API, persistence, evaluation) | ✅ Complete |
 | **Phase 4** | Humanization (RAG writing, reflexion loop, anti-AI prompts) | ✅ Complete |
+| **Phase 5** | SEO Analysis (FAQ generator, keyword analyzer, linking suggester) | ✅ Complete |
 
 See [`plan/`](plan/) directory for detailed implementation guides.
 

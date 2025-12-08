@@ -11,10 +11,11 @@ The system is designed as a **Deep Agent**, meaning it breaks down complex tasks
 Key differentiating features:
 - **Virtual Filesystem (VFS):** Decouples "Working Memory" (context window) from "Long-Term Storage" (research files). The agent can "read" and "write" files, allowing it to handle infinite research depth.
 - **Hierarchical Planning:** A "Planner" agent breaks the goal into tasks, which are executed by "Worker" sub-agents (Researcher, Writer).
-- **Subgraphs (LangGraph):** Each distinct capability (Research, Writing, Evaluation, Humanization) is encapsulated as a reusable subgraph.
+- **Subgraphs (LangGraph):** Each distinct capability (Research, Writing, Evaluation, Humanization, SEO Analysis) is encapsulated as a reusable subgraph.
 - **RAG-Powered Writing:** Uses SentenceTransformers + FAISS to retrieve only relevant research chunks per section.
 - **Multi-Model Evaluation:** Three specialized critics (Qwen, Kimi, Llama 4) evaluate drafts in parallel.
 - **Reflexion Humanization:** Iterative loop that detects and removes AI artifacts until 0% AI detection is achieved.
+- **Parallel SEO Analysis:** FAQ generation, keyword analysis, and linking suggestions run in parallel for efficiency.
 
 ## 2. Core Components
 
@@ -112,6 +113,21 @@ We leverage multiple **Groq** models for different purposes:
 3.  **Refiner:** Rewrites with human voice using before/after examples.
 4.  **Loop:** Repeats up to 3x until score is acceptable.
 5.  **Output:** Human-like article (0% AI detection).
+
+### 3.6 SEO Analysis (Parallel)
+1.  **Input:** Humanized draft + research data
+2.  **Parallel Execution:** ThreadPoolExecutor with 3 workers
+    - **FAQ Generator:** Creates 5-7 Q&A pairs from research
+    - **Keyword Analyzer:** Extracts primary/secondary/LSI keywords + density
+    - **Linking Suggester:** 3-5 internal + 2-4 external link suggestions
+3.  **Output:** Merged SEO analysis data for finalization.
+
+### 3.7 Finalizer
+1.  **Input:** Humanized draft + SEO analysis
+2.  **SEO Metadata:** Title tag, meta description, primary keyword
+3.  **FAQ Section:** Appends formatted Q&A
+4.  **Analysis Report:** Keyword density table, linking strategy
+5.  **Output:** Complete article saved to `Generated articles/`
 
 ## 4. Technology Stack
 

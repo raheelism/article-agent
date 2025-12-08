@@ -15,6 +15,39 @@ class Task(TypedDict):
     status: str # 'pending' | 'completed' | 'failed'
     params: Dict # extra params
 
+
+class FAQItem(TypedDict):
+    question: str
+    answer: str
+
+
+class InternalLink(TypedDict):
+    anchor_text: str
+    suggested_target: str
+    context: str
+
+
+class ExternalLink(TypedDict):
+    source_name: str
+    url: str
+    anchor_text: str
+    placement_context: str
+
+
+class KeywordReport(TypedDict):
+    primary_keyword: str
+    secondary_keywords: List[str]
+    lsi_keywords: List[str]
+    keyword_density: Dict[str, float]
+    recommendations: List[str]
+    total_words: int
+
+
+class LinkingReport(TypedDict):
+    internal_links: List[InternalLink]
+    external_links: List[ExternalLink]
+
+
 class AgentState(TypedDict):
     # User Inputs
     topic: str
@@ -29,5 +62,10 @@ class AgentState(TypedDict):
     # In a real heavy production, we might store just a reference/ID, 
     # but here we'll store the files dict directly.
     vfs_data: Dict[str, Dict] # Filename -> File dict representation
+    
+    # SEO Analysis Reports (new fields)
+    faqs: List[FAQItem]  # Generated FAQ section
+    keyword_report: KeywordReport  # Keyword analysis
+    linking_report: LinkingReport  # Link suggestions
     
     logs: Annotated[List[str], operator.add]
