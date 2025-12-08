@@ -414,6 +414,155 @@ GET /jobs/{job_id}
 
 ---
 
+## 📦 API Response Schema
+
+### Complete Result Schema (GET /jobs/{job_id} when status is "completed")
+
+When a job completes successfully, the `result` field contains the full generated output:
+
+```json
+{
+  "job_id": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "completed",
+  "result": {
+    "article": "# Full Markdown Article\n\nComplete humanized article content...",
+    "metadata": {
+      "title": "Fear of AI in Job Market: Understanding the Reality",
+      "meta_description": "Explore the facts behind AI job displacement fears...",
+      "generated_at": "2025-12-08T18:37:51",
+      "word_count": 1523,
+      "topic": "Fear of AI in Job Market"
+    },
+    "faqs": [
+      {
+        "question": "Will AI replace all human jobs?",
+        "answer": "No, AI is more likely to transform jobs rather than eliminate them entirely..."
+      },
+      {
+        "question": "Which industries are most affected by AI?",
+        "answer": "Manufacturing, customer service, and data entry are seeing significant changes..."
+      }
+    ],
+    "keyword_report": {
+      "primary_keyword": "AI job market",
+      "secondary_keywords": ["artificial intelligence employment", "automation workforce"],
+      "lsi_keywords": ["machine learning careers", "digital transformation jobs"],
+      "keyword_density": {
+        "AI": 2.3,
+        "job": 1.8,
+        "automation": 1.2
+      },
+      "recommendations": [
+        "Consider adding more instances of 'workforce automation'",
+        "The primary keyword density is optimal at 2.3%"
+      ]
+    },
+    "linking_report": {
+      "internal_links": [
+        {
+          "anchor_text": "AI tools in modern workplaces",
+          "target_page": "/blog/ai-workplace-tools",
+          "context": "Link in the introduction when discussing AI adoption"
+        },
+        {
+          "anchor_text": "upskilling strategies",
+          "target_page": "/resources/career-development",
+          "context": "Link in the solutions section"
+        }
+      ],
+      "external_links": [
+        {
+          "source": "World Economic Forum",
+          "url": "https://www.weforum.org/reports/future-of-jobs",
+          "anchor_text": "Future of Jobs Report 2025",
+          "context": "Cite when discussing global employment trends"
+        },
+        {
+          "source": "McKinsey Global Institute",
+          "url": "https://www.mckinsey.com/featured-insights/future-of-work",
+          "anchor_text": "automation impact research",
+          "context": "Reference for automation statistics"
+        }
+      ]
+    }
+  }
+}
+```
+
+### Schema Type Definitions
+
+```typescript
+interface JobResponse {
+  job_id: string;
+  status: "pending" | "running" | "completed" | "failed";
+  result: ArticleResult | null;
+}
+
+interface ArticleResult {
+  article: string;              // Full markdown article
+  metadata: ArticleMetadata;
+  faqs: FAQItem[];
+  keyword_report: KeywordReport;
+  linking_report: LinkingReport;
+}
+
+interface ArticleMetadata {
+  title: string;
+  meta_description: string;
+  generated_at: string;         // ISO 8601 timestamp
+  word_count: number;
+  topic: string;
+}
+
+interface FAQItem {
+  question: string;
+  answer: string;
+}
+
+interface KeywordReport {
+  primary_keyword: string;
+  secondary_keywords: string[];
+  lsi_keywords: string[];
+  keyword_density: Record<string, number>;  // keyword -> percentage
+  recommendations: string[];
+}
+
+interface LinkingReport {
+  internal_links: InternalLink[];
+  external_links: ExternalLink[];
+}
+
+interface InternalLink {
+  anchor_text: string;
+  target_page: string;
+  context: string;
+}
+
+interface ExternalLink {
+  source: string;
+  url: string;
+  anchor_text: string;
+  context: string;
+}
+```
+
+### Error Response
+
+```json
+{
+  "detail": "Job not found"
+}
+```
+
+| Status Code | Description |
+|-------------|-------------|
+| 200 | Success |
+| 404 | Job not found |
+| 422 | Validation error (invalid request body) |
+| 500 | Internal server error |
+
+---
+
 ## 📁 Project Structure
 
 ```
