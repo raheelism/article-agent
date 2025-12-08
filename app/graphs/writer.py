@@ -13,8 +13,18 @@ _embedding_model = None
 def get_embedding_model():
     global _embedding_model
     if _embedding_model is None:
-        # Use a small, fast model
-        _embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+        # Check for local model first, then fall back to download
+        # Set EMBEDDING_MODEL_PATH in .env to use a local model
+        model_path = os.getenv("EMBEDDING_MODEL_PATH")
+        
+        if model_path and os.path.exists(model_path):
+            print(f"  [Writer] Loading local embedding model from: {model_path}")
+            _embedding_model = SentenceTransformer(model_path)
+        else:
+            # Default: download from HuggingFace (requires internet)
+            model_name = os.getenv("EMBEDDING_MODEL_NAME", "all-MiniLM-L6-v2")
+            print(f"  [Writer] Loading embedding model: {model_name}")
+            _embedding_model = SentenceTransformer(model_name)
     return _embedding_model
 
 class WriterState(TypedDict):

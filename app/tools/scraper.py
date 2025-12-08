@@ -1,5 +1,15 @@
 import trafilatura
+import os
+import ssl
+import urllib3
 from typing import Optional
+
+# Disable SSL verification if configured (for corporate networks)
+if os.getenv("DISABLE_SSL_VERIFY", "").lower() == "true":
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    ssl._create_default_https_context = ssl._create_unverified_context
+    os.environ['CURL_CA_BUNDLE'] = ''
+    os.environ['REQUESTS_CA_BUNDLE'] = ''
 
 class WebScraper:
     def scrape(self, url: str) -> Optional[str]:
@@ -8,7 +18,16 @@ class WebScraper:
         Returns None if extraction fails.
         """
         try:
-            downloaded = trafilatura.fetch_url(url)
+            # Configure proxy if available
+            proxy = os.getenv("HTTPS_PROXY") or os.getenv("HTTP_PROXY")
+            if proxy:
+                os.environ['https_proxy'] = proxy
+                os.environ['http_proxy'] = proxy
+            
+            # Disable SSL verification if configured
+            no_ssl = os.getenv("DISABLE_SSL_VERIFY", "").lower() == "true"
+            
+            downloaded = trafilatura.fetch_url(url, no_ssl=no_ssl)
             if downloaded:
                 result = trafilatura.extract(downloaded)
                 return result
